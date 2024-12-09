@@ -1,0 +1,242 @@
+---
+title: "MSPR Predictions"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+## load the original files
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(openxlsx2)
+library(gtExtras)
+
+#load all original files (all final files, MSPR2 or equavalent)
+##########################################spring
+#spring 2024
+#spring_2024_mspr1 <- read_csv("path")
+spring_2024 <- read_csv("path")
+
+#spring 2023
+spring_2023 <- read_csv("path")
+
+#spring 2022
+spring_2022 <- read_csv("path")
+
+#spring 2021
+spring_2021 <- read_csv("path")
+
+#spring 2020
+spring_2020 <- read_csv("path")
+spring_2020 <- spring_2020 %>%
+  select(STUDENT_ID = ID, everything())
+
+#spring 2019
+spring_2019 <- read_csv("path")
+
+#spring 2018
+spring_2018 <- read_xlsx("path")
+spring_2018 <- spring_2018 %>%
+  select(STUDENT_ID = `Student ID`, ATTENDANCE = `Attendance Concern`, 
+         `LOW PARTICIPATION` = `Low Participation`, `LATE/MISSING ASSIGNMENTS` = `Late or missing written assignments`,
+         `OTHER ASSIGNMENTS CONCERNS` = `Other Assignment concerns`, `LOW TEST SCORES` = `Low quiz/test score`,
+         `DANGER of UNSATING` = `In danger of unsatting`, everything())
+
+
+##############################################fall
+
+#fall 2023
+fall_2023 <- read_xlsx("path")
+
+#fall 2022
+fall_2022 <- read_csv("path")
+
+#fall 2021
+fall_2021 <- read_xlsx("path")
+fall_2021 <- fall_2021 %>%
+  select(STUDENT_ID = ID, everything())
+
+#fall 2020 (missing file!)
+fall_2020 <- read_csv("path")
+
+#fall 2019
+fall_2019 <- read_csv("path")
+fall_2019 <- fall_2019 %>%
+  select(STUDENT_ID = ID, everything())
+
+#fall 2018 (missing Student_IDs, only PIDMS)
+fall_2018 <- read_xlsx("path")
+fall_2018_accounted_for <- read_csv("path")
+fall_2018 <- fall_2018 %>%
+  left_join(fall_2018_accounted_for %>% select(STUDENT_ID, STUDENT_PIDM),
+            by = c("SWBMSPR_PIDM" = "STUDENT_PIDM")) %>%
+  select(STUDENT_ID, everything()) %>%
+  select(-c(SWBMSPR_PIDM, SWBMSPR_TERM_CODE, SWBMSPR_CRN, SWBMSPR_NOCATT_IND,
+            SWBMSPR_COMMENT_TEXT, SWBMSPR_ACTIVITY_DATE, `date value`))
+names(fall_2018) <- c("STUDENT_ID", "ATTENDANCE", "LOW PARTICIPATION", "LATE/MISSING ASSIGNMENTS", 
+         "OTHER ASSIGNMENTS CONCERNS", "LOW TEST SCORES", "DANGER of UNSATING")
+
+```
+
+
+## Bring all MSPR files to the same format
+```{r}
+#bring all datasets to one format
+prep_mspr_dataset <- function(data, term){
+  dataset <- data %>%
+  select(STUDENT_ID, ATTENDANCE, `LOW PARTICIPATION`, `LATE/MISSING ASSIGNMENTS`, 
+         `OTHER ASSIGNMENTS CONCERNS`, `LOW TEST SCORES`, `DANGER of UNSATING`) %>%
+  mutate(across(
+    where(is.character) & !all_of(c("STUDENT_ID")),  # Select character columns
+    ~ case_when(
+      . == "Y" ~ 1,       # Replace "Y" with 1
+      is.na(.) ~ 0,       # Replace NA with 0
+      TRUE ~ as.numeric(.)  # Otherwise, return as numeric
+    )
+  )) %>%
+  mutate(Course_Count = 1) %>%
+  distinct() %>%
+  group_by(STUDENT_ID) %>%
+  summarise(across(everything(), sum, na.rm = TRUE)) %>%
+  mutate(TERM = term) %>%
+  select(TERM, everything())
+  
+  return(dataset)
+}
+
+
+#######################spring 
+spring_2024_clean <- prep_mspr_dataset(spring_2024, 202402)
+spring_2023_clean <- prep_mspr_dataset(spring_2023, 202302)
+spring_2022_clean <- prep_mspr_dataset(spring_2022, 202202)
+spring_2021_clean <- prep_mspr_dataset(spring_2021, 202102)
+spring_2020_clean <- prep_mspr_dataset(spring_2020, 202002)
+spring_2019_clean <- prep_mspr_dataset(spring_2019, 201902)
+spring_2018_clean <- prep_mspr_dataset(spring_2018, 201802)
+
+
+#######################fall
+fall_2023_clean <- prep_mspr_dataset(fall_2023, 202308)
+fall_2022_clean <- prep_mspr_dataset(fall_2022, 202208)
+fall_2021_clean <- prep_mspr_dataset(fall_2021, 202108)
+fall_2020_clean <- prep_mspr_dataset(fall_2020, 202008)
+fall_2019_clean <- prep_mspr_dataset(fall_2019, 201908)
+fall_2018_clean <- prep_mspr_dataset(fall_2018, 201808)
+```
+
+
+## row bind all of the MSPR files
+```{r}
+all_MSPR <- bind_rows(spring_2024_clean, spring_2023_clean, spring_2022_clean,
+                      spring_2021_clean, spring_2020_clean, spring_2019_clean, spring_2018_clean,
+                      fall_2023_clean, fall_2022_clean, fall_2021_clean,
+                      fall_2020_clean, fall_2019_clean, fall_2018_clean)
+```
+
+
+## Get original files for Contract Designations
+```{r}
+
+############spring
+contract_designations_spring_2024 <- read_csv("path")
+
+contract_designations_spring_2023 <- read_xlsx("path")
+
+contract_designations_spring_2022 <- read_csv("path")
+
+contract_designations_spring_2021 <- read_csv("path")
+
+contract_designations_spring_2020 <- read_csv("path")
+
+contract_designations_spring_2019 <- read_csv("path")
+
+
+#has different field names!!! Check!!!:
+contract_designations_spring_2018 <- read_csv("path")
+
+
+
+############fall
+contract_designations_fall_2023 <- read_csv("path")
+
+contract_designations_fall_2022 <- read_csv("path")
+
+contract_designations_fall_2021 <- read_csv("path")
+
+contract_designations_fall_2020 <- read_csv("path")
+
+contract_designations_fall_2019 <- read_csv("path")
+
+contract_designations_fall_2018 <- read_csv("path")
+
+```
+
+
+## Prep contract designation for merge with MSPR records
+```{r}
+pred_designations_dataset <- function(dataset, term){
+  dataset %>%
+  select(SQ_COUNT_STUDENT_ID, CLASS_TITLE, ACAD_HIST_GRDE_CODE, ACAD_HIST_GRDE_DESC) %>%
+  filter(str_detect(CLASS_TITLE,regex("Contract", ignore_case = TRUE))) %>% #only records for contracts
+  drop_na() %>% #drop NA records
+  distinct() %>% #remove duplicates if any
+  filter(ACAD_HIST_GRDE_DESC %in% c("Satisfactory", "Unsatisfactory")) %>%
+  select(STUDENT_ID = SQ_COUNT_STUDENT_ID, DESIGNATION = ACAD_HIST_GRDE_DESC) %>%
+  mutate(DESIGNATION_BINARY = as.numeric(DESIGNATION == "Satisfactory")) %>%
+  select(STUDENT_ID, DESIGNATION_BINARY) %>%
+  mutate(TERM = term) %>%
+  select(TERM, everything())
+}
+
+###########################spring
+contract_designations_spring_2024_clean <- pred_designations_dataset(contract_designations_spring_2024, 202402)
+contract_designations_spring_2023_clean <- pred_designations_dataset(contract_designations_spring_2023, 202302)
+contract_designations_spring_2022_clean <- pred_designations_dataset(contract_designations_spring_2022, 202202)
+contract_designations_spring_2021_clean <- pred_designations_dataset(contract_designations_spring_2021, 202102)
+contract_designations_spring_2020_clean <- pred_designations_dataset(contract_designations_spring_2020, 202002)
+contract_designations_spring_2019_clean <- pred_designations_dataset(contract_designations_spring_2019, 201902)
+contract_designations_spring_2018_clean <- pred_designations_dataset(contract_designations_spring_2018, 201802)
+
+
+
+###########################fall
+contract_designations_fall_2023_clean <- pred_designations_dataset(contract_designations_fall_2023, 202308)
+contract_designations_fall_2022_clean <- pred_designations_dataset(contract_designations_fall_2022, 202208)
+contract_designations_fall_2021_clean <- pred_designations_dataset(contract_designations_fall_2021, 202108)
+contract_designations_fall_2020_clean <- pred_designations_dataset(contract_designations_fall_2020, 202008)
+contract_designations_fall_2019_clean <- pred_designations_dataset(contract_designations_fall_2019, 201908)
+contract_designations_fall_2018_clean <- pred_designations_dataset(contract_designations_fall_2018, 201808)
+
+
+```
+
+```{r}
+#Append all designation files into one
+all_DESIGNATIONS <- bind_rows(contract_designations_spring_2024_clean, contract_designations_spring_2023_clean,
+                              contract_designations_spring_2022_clean, contract_designations_spring_2021_clean,
+                              contract_designations_spring_2020_clean, contract_designations_spring_2019_clean,
+                              contract_designations_spring_2018_clean,
+                              contract_designations_fall_2023_clean, contract_designations_fall_2022_clean,
+                              contract_designations_fall_2021_clean, contract_designations_fall_2020_clean,
+                              contract_designations_fall_2019_clean, contract_designations_fall_2018_clean)
+```
+
+## Final dataset
+```{r}
+#MVP training dataset
+mvp_train <- all_MSPR %>%
+  inner_join(all_DESIGNATIONS, by = c("TERM", "STUDENT_ID")) %>%
+  select(-TERM, -STUDENT_ID)
+
+#shuffle the data, just in case:
+mvp_train_shuffled <- mvp_train[sample(nrow(mvp_train)), ]
+```
+
+
+
+```{r}
+#output file
+write_csv(mvp_train_shuffled, "exports/mvp_train(all terms and course count).csv")
+```
+
