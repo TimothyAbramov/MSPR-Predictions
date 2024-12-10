@@ -1,0 +1,125 @@
+---
+title: "visuals"
+output: html_document
+date: "2024-12-10"
+---
+
+```{r}
+library(rstudioapi)
+library(tidyverse)
+library(ggplot2)
+library(patchwork)
+library(hrbrthemes)
+library(plotly)
+library(stringr)
+library(RColorBrewer)
+library(hms)
+library(scales)
+```
+
+```{r}
+#stratified splitting bar plot
+datasets_dist <- data.frame(DataSet = c("Train", "Train", "Val", "Val", "Test", "Test"),
+                            DesignationBinary = c(1, 0),
+                            Count = c(2879, 292, 617, 62, 617, 63),
+                            Percentage = c(90.8, 9.2, 90.9, 9.1, 90.7, 9.3))
+datasets_dist$DataSet <- factor(datasets_dist$DataSet, levels = c("Train", "Val", "Test"))
+
+ggplot(datasets_dist, aes(x = DataSet, y = Percentage, fill = factor(DesignationBinary))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(
+    aes(label = paste0(Percentage,"% (", Count, ")")),
+    position = position_dodge(width = 0.9),
+    vjust = -0.5,
+    size = 5,
+    color = "white",
+    fontface = "bold"
+  ) +
+  scale_fill_brewer(palette = "Pastel1") +
+  labs(
+    x = "",
+    y = "Percentage (%)",
+    fill = "Designation Binary"
+  ) +
+  theme_minimal() +
+   theme(
+    axis.title.x = element_text(size = 16, color = "white"), # White x-axis title
+    axis.title.y = element_text(size = 16, color = "white"), # White y-axis title
+    axis.text.x = element_text(size = 16, color = "white"),  # White x-axis text
+    axis.text.y = element_text(size = 14, color = "white"),  # White y-axis text
+    plot.title = element_text(size = 16, color = "white", hjust = 0.5), # White title
+    legend.title = element_text(size = 16, color = "white"), # White legend title
+    legend.text = element_text(size = 14, color = "white"),  # White legend text
+    panel.grid.major.x = element_line(color = NA), # Remove vertical grid lines
+    panel.grid.major.y = element_line(color = "white") # White horizontal grid lines
+  )
+
+ggsave("visualizations/stratified_splitting.png", width = 12, height = 7)
+```
+
+
+```{r}
+#smote viz
+smote_data <- data.frame(Smote = c("Pre-SMOTE", "Pre-SMOTE", "Post-SMOTE", "Post-SMOTE"),
+                        DataSet = c("X_train", "y_train"),
+                        RowCount = c(3171, 3171, 5758, 5758),
+                        DesignationBinary = c(0, 1),
+                        DesignationBinaryCount = c(292, 2879, 2879, 2879))
+smote_data$Smote <- factor(smote_data$Smote, levels = c("Pre-SMOTE", "Post-SMOTE"))
+
+smote_data_rows <- data.frame(Smote = c("Pre-SMOTE", "Post-SMOTE"),
+                        RowCount = c(3171, 5758))
+smote_data_rows$Smote <- factor(smote_data_rows$Smote, levels = c("Pre-SMOTE", "Post-SMOTE"))
+
+ggplot(smote_data_rows, aes(x = Smote, y = RowCount)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.6, fill = "#e0e0e0ff") +
+  scale_y_continuous(breaks = seq(0, max(smote_data$RowCount), by = 1000)) +
+  geom_text(aes(label = RowCount), position = position_stack(vjust = 0.5), color = "black", size = 4, fontface = "bold") +
+  labs(
+    title = "X_train & y_train Row Count",
+    x = "",
+    y = ""
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 16, color = "white"), # White x-axis title
+    axis.title.y = element_text(size = 16, color = "white"), # White y-axis title
+    axis.text.x = element_text(size = 14, color = "white"),  # White x-axis text
+    axis.text.y = element_text(size = 14, color = "white"),  # White y-axis text
+    plot.title = element_text(size = 16, color = "white", hjust = 0.5), # White title
+    legend.position = "none",
+    panel.grid.major.x = element_line(color = NA), # Remove vertical grid lines
+    panel.grid.minor.y = element_blank()
+  )
+
+ggsave("visualizations/smote_rowcount.png", width = 7, height = 7)
+
+ggplot(smote_data, aes(x = Smote, y = DesignationBinaryCount, fill = factor(DesignationBinary))) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.6) +
+  geom_text(aes(label = DesignationBinaryCount), position = position_dodge(width = 0.6), 
+            vjust = -0.5, color = "white", size = 5, fontface = "bold") +
+  labs(
+    title = "Designation Binary Count",
+    x = "",
+    y = "",
+    fill = "Designation Binary"
+  ) +
+  scale_y_continuous(limits = c(0, 3200)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(size = 16, color = "white"), # White x-axis title
+    axis.title.y = element_text(size = 16, color = "white"), # White y-axis title
+    axis.text.x = element_text(size = 14, color = "white"),  # White x-axis text
+    axis.text.y = element_text(size = 14, color = "white"),  # White y-axis text
+    plot.title = element_text(size = 16, color = "white", hjust = 0.5), # White title
+    legend.title = element_text(size = 16, color = "white"), # White legend title
+    legend.text = element_text(size = 14, color = "white"),  # White legend text
+    panel.grid.major.x = element_line(color = NA), # Remove vertical grid lines
+    panel.grid.major.y = element_line(color = "white"),# White horizontal grid lines
+    panel.grid.minor.y = element_blank()
+  )
+
+ggsave("visualizations/smote_designationbinarycount.png", width = 9, height = 7)
+```
+
